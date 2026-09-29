@@ -1,0 +1,238 @@
+import type { AssessmentDef } from "../types";
+import { DEFAULT_TIERS, standardZones } from "../types";
+
+// Sales & Marketing Performance Index — diagnostic for revenue teams & founders.
+// 6 pillars, 30 points, ~1000-point index, 400/600 thresholds.
+
+export const salesMarketing: AssessmentDef = {
+  key: "sales-marketing",
+  name: "Sales & Marketing Diagnostic",
+  tagline: "Strategy → leads → content → conversion → retention → analytics",
+  indexLabel: "Sales & Marketing Index",
+  shortIndex: "Performance",
+  description:
+    "A performance diagnostic for sales & marketing functions, decomposing strategy, lead generation, content & brand, conversion, retention and analytics into a revenue-optimising index with an AI intervention path.",
+  tiers: DEFAULT_TIERS,
+  accent: "var(--gold)",
+  zones: standardZones("Sales & Marketing Index"),
+  gatingPointId: 18,
+  coachProOnly: true,
+  pillars: [
+    {
+      index: 0,
+      roman: "I",
+      name: "Strategy & Positioning",
+      focus: "ICP · value prop · differentiation",
+    },
+    { index: 1, roman: "II", name: "Lead Generation", focus: "Pipeline · channels · outreach" },
+    { index: 2, roman: "III", name: "Content & Brand", focus: "Calendar · quality · distribution" },
+    {
+      index: 3,
+      roman: "IV",
+      name: "Conversion & Sales Process",
+      focus: "Funnel · close rate · follow-up",
+    },
+    { index: 4, roman: "V", name: "Customer Retention", focus: "Onboarding · success · upsell" },
+    {
+      index: 5,
+      roman: "VI",
+      name: "Analytics & Optimisation",
+      focus: "KPIs · attribution · experiments",
+    },
+  ],
+  points: [
+    // I — Strategy & Positioning (168)
+    {
+      id: 1,
+      pillar: 0,
+      name: "Ideal Customer Definition",
+      focus: "Sharply defined ICP",
+      weight: 34,
+    },
+    {
+      id: 2,
+      pillar: 0,
+      name: "Value Proposition",
+      focus: "Outcome stated in one line",
+      weight: 34,
+    },
+    { id: 3, pillar: 0, name: "Market Positioning", focus: "Owned category or niche", weight: 34 },
+    {
+      id: 4,
+      pillar: 0,
+      name: "Competitive Differentiation",
+      focus: "Defensible, visible moat",
+      weight: 33,
+    },
+    {
+      id: 5,
+      pillar: 0,
+      name: "Brand Voice & Identity",
+      focus: "Consistent across touchpoints",
+      weight: 33,
+    },
+    // II — Lead Generation (170)
+    {
+      id: 6,
+      pillar: 1,
+      name: "Pipeline Volume",
+      focus: "Consistent qualified lead flow",
+      weight: 34,
+    },
+    { id: 7, pillar: 1, name: "Channel Mix", focus: "Diversified, not single-source", weight: 34 },
+    {
+      id: 8,
+      pillar: 1,
+      name: "Lead Magnet Strategy",
+      focus: "Value-first assets converting",
+      weight: 34,
+    },
+    {
+      id: 9,
+      pillar: 1,
+      name: "Outreach Discipline",
+      focus: "Daily outbound cadence held",
+      weight: 34,
+    },
+    { id: 10, pillar: 1, name: "Referral Engine", focus: "Systematic ask & reward", weight: 34 },
+    // III — Content & Brand (166)
+    {
+      id: 11,
+      pillar: 2,
+      name: "Content Calendar",
+      focus: "Planned & published on schedule",
+      weight: 34,
+    },
+    {
+      id: 12,
+      pillar: 2,
+      name: "Content Quality",
+      focus: "Original, valuable, on-brand",
+      weight: 33,
+    },
+    {
+      id: 13,
+      pillar: 2,
+      name: "Distribution Reach",
+      focus: "Published where audience lives",
+      weight: 33,
+    },
+    {
+      id: 14,
+      pillar: 2,
+      name: "Social Proof",
+      focus: "Testimonials & case studies captured",
+      weight: 33,
+    },
+    {
+      id: 15,
+      pillar: 2,
+      name: "Thought Leadership",
+      focus: "Recognised authority in niche",
+      weight: 33,
+    },
+    // IV — Conversion & Sales Process (168)
+    {
+      id: 16,
+      pillar: 3,
+      name: "Sales Funnel Definition",
+      focus: "Documented stages & exit criteria",
+      weight: 34,
+    },
+    {
+      id: 17,
+      pillar: 3,
+      name: "Close Rate",
+      focus: "Opportunity → customer converting",
+      weight: 34,
+    },
+    {
+      id: 18,
+      pillar: 3,
+      name: "Follow-up System",
+      focus: "No lead goes cold, automated nurture",
+      weight: 34,
+      gating: true,
+    },
+    {
+      id: 19,
+      pillar: 3,
+      name: "Objection Handling",
+      focus: "Core objections pre-engineered",
+      weight: 33,
+    },
+    {
+      id: 20,
+      pillar: 3,
+      name: "Sales Cycle Speed",
+      focus: "Short, disciplined, predictable",
+      weight: 33,
+    },
+    // V — Customer Retention (164)
+    {
+      id: 21,
+      pillar: 4,
+      name: "Onboarding Experience",
+      focus: "Frictionless first 14 days",
+      weight: 34,
+    },
+    {
+      id: 22,
+      pillar: 4,
+      name: "Customer Success",
+      focus: "Proactive health & outcomes tracked",
+      weight: 33,
+    },
+    { id: 23, pillar: 4, name: "Retention Rate", focus: "Churn below benchmark", weight: 33 },
+    {
+      id: 24,
+      pillar: 4,
+      name: "Upsell / Cross-sell",
+      focus: "Expansion revenue growing",
+      weight: 32,
+    },
+    {
+      id: 25,
+      pillar: 4,
+      name: "NPS / Feedback Loop",
+      focus: "Collected, reviewed, acted on",
+      weight: 32,
+    },
+    // VI — Analytics & Optimisation (164)
+    {
+      id: 26,
+      pillar: 5,
+      name: "KPI Tracking",
+      focus: "Leading & lagging metrics visible",
+      weight: 34,
+    },
+    {
+      id: 27,
+      pillar: 5,
+      name: "Attribution Clarity",
+      focus: "Knows what channel drives revenue",
+      weight: 33,
+    },
+    {
+      id: 28,
+      pillar: 5,
+      name: "CAC / LTV Visibility",
+      focus: "Unit economics measured",
+      weight: 33,
+    },
+    {
+      id: 29,
+      pillar: 5,
+      name: "Experiment Cadence",
+      focus: "Tests run & reviewed weekly",
+      weight: 33,
+    },
+    {
+      id: 30,
+      pillar: 5,
+      name: "Reporting Cadence",
+      focus: "Weekly review ritual held",
+      weight: 31,
+    },
+  ],
+};

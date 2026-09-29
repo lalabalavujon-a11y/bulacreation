@@ -1,0 +1,241 @@
+import type { AssessmentDef } from "../types";
+import { DEFAULT_TIERS, standardZones } from "../types";
+
+// Rugby Personal Development Index — diagnostic for rugby players & athletes.
+// 6 pillars, 30 points, ~1000-point index, 400/600 thresholds.
+
+export const rugbyPersonalDevelopment: AssessmentDef = {
+  key: "rugby-personal-development",
+  name: "Rugby Personal Development Diagnostic",
+  tagline: "Conditioning → technique → tactics → mind → recovery → career",
+  indexLabel: "Rugby Development Index",
+  shortIndex: "Development",
+  description:
+    "A personal development diagnostic for rugby players, decomposing physical conditioning, technical skill, tactical awareness, mental performance, recovery and off-field leadership into an actionable development score.",
+  tiers: DEFAULT_TIERS,
+  accent: "var(--gold)",
+  zones: standardZones("Rugby Development Index"),
+  gatingPointId: 13,
+  coachProOnly: true,
+  pillars: [
+    {
+      index: 0,
+      roman: "I",
+      name: "Physical Conditioning",
+      focus: "Aerobic · strength · speed · mobility",
+    },
+    {
+      index: 1,
+      roman: "II",
+      name: "Technical Skills",
+      focus: "Passing · catching · kicking · contact",
+    },
+    {
+      index: 2,
+      roman: "III",
+      name: "Tactical Awareness",
+      focus: "Position · reading · decisions · structure",
+    },
+    {
+      index: 3,
+      roman: "IV",
+      name: "Mental Performance",
+      focus: "Focus · resilience · confidence · control",
+    },
+    {
+      index: 4,
+      roman: "V",
+      name: "Recovery & Lifestyle",
+      focus: "Sleep · nutrition · hydration · load",
+    },
+    {
+      index: 5,
+      roman: "VI",
+      name: "Career & Leadership",
+      focus: "Goals · review · leadership · growth",
+    },
+  ],
+  points: [
+    // I — Physical Conditioning (170)
+    { id: 1, pillar: 0, name: "Aerobic Capacity", focus: "Match-lasting engine", weight: 34 },
+    {
+      id: 2,
+      pillar: 0,
+      name: "Strength & Power",
+      focus: "Collision-dominant strength",
+      weight: 34,
+    },
+    {
+      id: 3,
+      pillar: 0,
+      name: "Speed & Agility",
+      focus: "Acceleration & change of direction",
+      weight: 34,
+    },
+    {
+      id: 4,
+      pillar: 0,
+      name: "Mobility & Injury Prevention",
+      focus: "Pre-hab routine drilled",
+      weight: 34,
+    },
+    {
+      id: 5,
+      pillar: 0,
+      name: "Body Composition",
+      focus: "Lean mass matched to position",
+      weight: 34,
+    },
+    // II — Technical Skills (168)
+    {
+      id: 6,
+      pillar: 1,
+      name: "Passing Accuracy",
+      focus: "Both hands, both sides, on target",
+      weight: 34,
+    },
+    {
+      id: 7,
+      pillar: 1,
+      name: "Catching & Handling",
+      focus: "Secure under pressure & high ball",
+      weight: 34,
+    },
+    {
+      id: 8,
+      pillar: 1,
+      name: "Kicking Game",
+      focus: "Tactical & goal kicking reliable",
+      weight: 34,
+    },
+    {
+      id: 9,
+      pillar: 1,
+      name: "Tackling Technique",
+      focus: "Safe, dominant, consistent",
+      weight: 34,
+    },
+    { id: 10, pillar: 1, name: "Contact Skills", focus: "Carry, clean-out, jackal", weight: 32 },
+    // III — Tactical Awareness (168)
+    {
+      id: 11,
+      pillar: 2,
+      name: "Positional Understanding",
+      focus: "Knows role in every phase",
+      weight: 34,
+    },
+    {
+      id: 12,
+      pillar: 2,
+      name: "Game Reading",
+      focus: "Anticipates opposition patterns",
+      weight: 34,
+    },
+    {
+      id: 13,
+      pillar: 2,
+      name: "Decision Making Under Pressure",
+      focus: "Right call at pace",
+      weight: 34,
+      gating: true,
+    },
+    {
+      id: 14,
+      pillar: 2,
+      name: "Support Play",
+      focus: "Always an option for the ball carrier",
+      weight: 33,
+    },
+    {
+      id: 15,
+      pillar: 2,
+      name: "Defensive Structure",
+      focus: "Line integrity & spacing",
+      weight: 33,
+    },
+    // IV — Mental Performance (166)
+    {
+      id: 16,
+      pillar: 3,
+      name: "Focus & Concentration",
+      focus: "Locked in for 80 minutes",
+      weight: 34,
+    },
+    {
+      id: 17,
+      pillar: 3,
+      name: "Resilience & Bounceback",
+      focus: "Reset fast after error",
+      weight: 33,
+    },
+    { id: 18, pillar: 3, name: "Confidence", focus: "Backs self in every contest", weight: 33 },
+    {
+      id: 19,
+      pillar: 3,
+      name: "Emotional Control",
+      focus: "Discipline under provocation",
+      weight: 33,
+    },
+    { id: 20, pillar: 3, name: "Competitive Drive", focus: "Relentless will to win", weight: 33 },
+    // V — Recovery & Lifestyle (164)
+    { id: 21, pillar: 4, name: "Sleep Quality", focus: "8+ hrs, consistent schedule", weight: 34 },
+    {
+      id: 22,
+      pillar: 4,
+      name: "Nutrition Discipline",
+      focus: "Fuel matched to training load",
+      weight: 33,
+    },
+    { id: 23, pillar: 4, name: "Hydration", focus: "Pre, during, post-match protocol", weight: 33 },
+    {
+      id: 24,
+      pillar: 4,
+      name: "Active Recovery",
+      focus: "Mobility, pool, contrast on off days",
+      weight: 33,
+    },
+    {
+      id: 25,
+      pillar: 4,
+      name: "Load Management",
+      focus: "Reads body, communicates fatigue",
+      weight: 31,
+    },
+    // VI — Career & Leadership (164)
+    {
+      id: 26,
+      pillar: 5,
+      name: "Goal Setting",
+      focus: "Season & weekly targets written",
+      weight: 34,
+    },
+    {
+      id: 27,
+      pillar: 5,
+      name: "Review & Reflection",
+      focus: "Reviews game tape & own performance",
+      weight: 33,
+    },
+    {
+      id: 28,
+      pillar: 5,
+      name: "Leadership & Communication",
+      focus: "Voice on field, lifts teammates",
+      weight: 33,
+    },
+    {
+      id: 29,
+      pillar: 5,
+      name: "Mentorship & Coaching Uptake",
+      focus: "Seeks & applies feedback",
+      weight: 33,
+    },
+    {
+      id: 30,
+      pillar: 5,
+      name: "Off-Field Development",
+      focus: "Plan beyond rugby, identity balanced",
+      weight: 31,
+    },
+  ],
+};
