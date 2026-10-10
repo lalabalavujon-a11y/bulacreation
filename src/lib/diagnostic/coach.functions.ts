@@ -1,3 +1,4 @@
+import { consumeAi, requireFeature } from "../security/session.server";
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { getPersonaSystem } from "./personas";
@@ -14,6 +15,8 @@ const InputSchema = z.object({
 export const askCoach = createServerFn({ method: "POST" })
   .validator((data) => InputSchema.parse(data))
   .handler(async ({ data }) => {
+    if (data.persona === "calibration") await requireFeature("coachOs");
+    await consumeAi();
     const apiKey = process.env.OPENAI_API_KEY;
     if (!apiKey) {
       return {

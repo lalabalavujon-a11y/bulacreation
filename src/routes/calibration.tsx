@@ -1,5 +1,5 @@
 // Creation Calibration Intensive — the one-time, fully AI-led deep session.
-// Unlocked by the `bula-calibration` tag (60-day Coach access). An autonomous
+// Unlocked by a verified Coach entitlement (including a paid intensive). An autonomous
 // agent — the Calibration Director — conducts the session: diagnostic →
 // synthesis → commitment, then writes the Creation Plan into the app.
 
@@ -58,9 +58,9 @@ export const Route = createFileRoute("/calibration")({
 type Phase = "intro" | "session" | "plan";
 
 function CalibrationComponent() {
-  const { result, chiefAim } = useDiagnostic();
+  const { result, chiefAim, setCreationPlan } = useDiagnostic();
   const { entitlements } = useSubscription();
-  const { email } = useAuth();
+  const { isAdmin } = useAuth();
   const navigate = useNavigate();
   const ask = useServerFn(askCoach);
   const generatePlan = useServerFn(generateCreationPlan);
@@ -79,7 +79,7 @@ function CalibrationComponent() {
   const hasAccess =
     entitlements.plan === "coach" ||
     entitlements.plan === "coach_pro" ||
-    email?.trim().toLowerCase() === "lalabalavu.jon@gmail.com";
+    isAdmin;
 
   useEffect(() => {
     if (scrollRef.current) {
@@ -148,6 +148,7 @@ function CalibrationComponent() {
         },
       });
       setPlan(res);
+      setCreationPlan(res);
       setPhase("plan");
     } catch (e) {
       setError((e as Error).message);

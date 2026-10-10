@@ -38,13 +38,13 @@ export const Route = createFileRoute("/pricing")({
 });
 
 function PricingComponent() {
-  const { plan: currentPlan, status, cancelPlan } = useSubscription();
+  const { plan: currentPlan, status } = useSubscription();
   const navigate = useNavigate();
   const [billing, setBilling] = useState<BillingCycle>("monthly");
 
   const choose = (key: PlanKey) => {
     if (key === "free") {
-      cancelPlan();
+      if (currentPlan !== "free") void navigate({ to: "/support" });
       return;
     }
     navigate({
@@ -64,7 +64,7 @@ function PricingComponent() {
         <p className="mx-auto mt-3 max-w-2xl text-sm text-muted-foreground">
           The 40-Point Creation Algorithm is a personal operating system: audit → diagnose →
           prioritise → act → measure → coach → repeat. Pick the tier that matches your ambition.
-          14-day free trial on every paid plan. Cancel anytime.
+          Review the price, billing period and any trial terms at checkout.
         </p>
       </header>
 
@@ -214,21 +214,17 @@ function PricingComponent() {
           </div>
           <div className="mt-1 font-display text-lg font-semibold text-foreground">
             {PLANS[currentPlan].name}
-            {status === "trialing" && (
-              <span className="ml-2 text-sm font-normal text-gold">· on trial</span>
-            )}
-            {status === "expired" && (
-              <span className="ml-2 text-sm font-normal text-destructive">· trial expired</span>
-            )}
+
+
           </div>
         </div>
         <div className="flex gap-2">
           {currentPlan !== "free" && (
             <button
-              onClick={cancelPlan}
+              onClick={() => navigate({ to: "/support" })}
               className="rounded-md border border-border px-4 py-2 text-sm font-medium text-foreground transition-colors hover:bg-accent"
             >
-              Cancel plan
+              Manage billing
             </button>
           )}
           <Link
@@ -312,8 +308,8 @@ function PricingComponent() {
       </section>
 
       <p className="text-center text-xs text-muted-foreground">
-        Prices in GBP. V1 entitlements are managed locally; connect a billing provider at launch to
-        activate live checkout. The 40-Point Creation Algorithm™ is a proprietary methodology.
+        Prices in GBP. Paid access activates after payment verification. Review the final amount and
+        billing period at checkout. The 40-Point Creation Algorithm™ is a proprietary methodology.
       </p>
     </div>
   );

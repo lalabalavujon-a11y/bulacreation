@@ -32,7 +32,7 @@ export function Onboarding() {
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-background/95 p-4 backdrop-blur">
-      <div className="w-full max-w-lg rounded-xl border border-border bg-card shadow-2xl">
+      <div className="max-h-[90dvh] overflow-y-auto w-full max-w-lg rounded-xl border border-border bg-card shadow-2xl">
         {/* Progress header */}
         <div className="flex items-center justify-between border-b border-border px-6 py-4">
           <div className="flex items-center gap-2">
@@ -80,6 +80,9 @@ export function Onboarding() {
                   audit, intervention, and metric answers one question: does this move the aim?
                 </p>
               </div>
+              <button type="button" onClick={finish} className="text-sm text-gold underline">
+                Returning on a new device? Open saved progress
+              </button>
               <div>
                 <label className="text-xs font-medium uppercase tracking-wider text-muted-foreground">
                   Your Chief Aim (one precise sentence)

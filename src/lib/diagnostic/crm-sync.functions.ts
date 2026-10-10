@@ -1,3 +1,4 @@
+import { requireAccount, assertSameOrigin } from "../security/session.server";
 // Thin server-function wrapper for CRM sync. Helpers live in crm.server.ts.
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
@@ -21,6 +22,9 @@ const Schema = z.object({
 export const syncToCrm = createServerFn({ method: "POST" })
   .validator((data) => Schema.parse(data))
   .handler(async ({ data }) => {
+    assertSameOrigin();
+    const account = await requireAccount();
+    if (data.email.trim().toLowerCase() !== account.email) throw new Error("You can only sync your own account.");
     const up = await upsertContactWithScores(data);
     if (!up.ok) return up;
     if (up.contactId) {

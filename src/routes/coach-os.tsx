@@ -1,3 +1,4 @@
+import { accountStorage } from "@/lib/diagnostic/local-storage";
 import { createFileRoute } from "@tanstack/react-router";
 import { useState, useEffect, useCallback } from "react";
 import {
@@ -73,7 +74,7 @@ function CoachOSComponent() {
     setHydrated(true);
     refresh();
     const stored =
-      typeof window !== "undefined" ? window.localStorage.getItem("creation-active-slot") : null;
+      typeof window !== "undefined" ? accountStorage.getItem("creation-active-slot") : null;
     setActiveSlotId(stored);
   }, [refresh]);
 
@@ -106,7 +107,7 @@ function CoachOSComponent() {
   const handleSelectActive = (slotId: string) => {
     setActiveSlotId(slotId);
     if (typeof window !== "undefined") {
-      window.localStorage.setItem("creation-active-slot", slotId);
+      accountStorage.setItem("creation-active-slot", slotId);
     }
   };
 

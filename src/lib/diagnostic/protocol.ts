@@ -1,3 +1,4 @@
+import { accountStorage } from "@/lib/diagnostic/local-storage";
 // Agentic protocol engine — pure, browser-safe.
 // Generates the daily high-leverage protocol from the bottleneck sort,
 // forecasts days-to-zone from the snapshot trend, and parses structured
@@ -215,7 +216,7 @@ const COMMITMENT_KEY = "creation-algorithm-commitments-v1";
 export function loadCommitments(): Commitment[] {
   if (typeof window === "undefined") return [];
   try {
-    const raw = window.localStorage.getItem(COMMITMENT_KEY);
+    const raw = accountStorage.getItem(COMMITMENT_KEY);
     return raw ? (JSON.parse(raw) as Commitment[]) : [];
   } catch {
     return [];
@@ -225,7 +226,7 @@ export function loadCommitments(): Commitment[] {
 export function saveCommitments(list: Commitment[]): void {
   if (typeof window === "undefined") return;
   try {
-    window.localStorage.setItem(COMMITMENT_KEY, JSON.stringify(list));
+    accountStorage.setItem(COMMITMENT_KEY, JSON.stringify(list));
   } catch {
     /* ignore quota */
   }

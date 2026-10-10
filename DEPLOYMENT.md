@@ -1,309 +1,73 @@
-# Deployment Guide — Bula Creation (40-Point Creation Algorithm)
+# Secure accounts deployment
 
-This app runs **same-origin on TanStack Start** deployed to the **Cloudflare
-Workers edge runtime** with `nodejs_compat`. All server logic lives inside the
-app — there is no separate legacy Worker to deploy.
+This release changes authentication and persistence. **Do not publish until the managed authentication service, database, email sender and payment adapter are configured and tested in staging.** Existing name/email-only sessions and browser payment flags are deliberately not trusted. This branch does not provision infrastructure or alter the live site.
 
-All server routes live in `src/routes/api/*`:
+The existing TanStack Start/LeadConnector deployment remains same-origin. Its Cloudflare runtime needs `nodejs_compat` and server runtime environment injection, as before. Database/auth requests use HTTPS REST, not a database connection in the browser.
 
-| Capability | Implementation |
-| --- | --- |
-| Audit persistence | `src/routes/api/audit/save.ts` → `src/lib/diagnostic/store.server.ts` (in-isolate store) + CRM mirror |
-| Audit read | `src/routes/api/audit/$id.ts` |
-| Trajectory snapshots | `src/routes/api/trajectory/snapshot.ts` |
-| Realtime voice session | `src/routes/api/realtime/session.ts` (creates the OpenAI Realtime ephemeral token) |
-| Checkout webhook | `src/routes/api/webhooks/checkout.ts` |
-| Text coach | `src/lib/diagnostic/coach.functions.ts` (`createServerFn`) |
-| CRM sync + zone tags | `src/lib/diagnostic/crm.server.ts` + `src/lib/diagnostic/crm-sync.functions.ts` |
+## Authentication and database
 
----
+1. Select or create a dedicated Supabase project for Bula Creation. Back up any existing database before applying migrations. Run `supabase/migrations/202610100001_secure_accounts.sql` through the project migration workflow.
+2. Enable email authentication. Configure a production SMTP sender and verify its domain. Set the email template to show `{{ .Token }}`; this app uses an email verification code, not a link callback. Configure OTP expiry, rate limits and abuse protection appropriate for public signup. See [Supabase email OTP documentation](https://supabase.com/docs/guides/auth/auth-email-passwordless).
+3. Inject `SUPABASE_URL`, `SUPABASE_ANON_KEY`, and `SUPABASE_SERVICE_ROLE_KEY` as server runtime settings. The service role key is a secret; never put it in a `VITE_` variable, client bundle, commit or chat. All Bula tables have RLS enabled and deny `anon`/`authenticated`; only the same-origin server accesses them. See [Supabase RLS documentation](https://supabase.com/docs/guides/database/postgres/row-level-security).
+4. Verify a real test email in staging. The app creates a default **member**, stores a random session token's SHA-256 hash, and sends an HTTP-only, SameSite=Lax cookie (Secure on HTTPS). Sessions expire after seven days; logging out revokes the stored session. There is no password or admin-email shortcut.
+5. To bootstrap the owner, independently verify the intended account UUID after email verification. An authorized database administrator can then run `update public.bula_accounts set role = 'admin' where id = '<verified-owner-uuid>';`. Buying Coach Pro never grants an admin role. Revoke by restoring `member`; the next server request reads the updated role.
+6. Configure periodic cleanup of expired `bula_sessions` and an appropriate retention policy for usage and billing event records. Enable database backups and rehearse recovery. No cleanup scheduler is provisioned by this branch.
 
-## 1. Secrets (configure via the secrets tool)
+The server fails closed if configuration/storage is unavailable. Never deploy a fallback that recreates the old name/email login. Email sending and verification errors are user-visible. Existing users must verify their email once after the cutover.
 
-The app reads these inside server handlers via `process.env` (injected at
-request time on the edge runtime):
+## Progress and migration
 
-| Secret | Used by | Purpose |
-| --- | --- | --- |
-| `OPENAI_API_KEY` | `api/realtime/session`, `coach.functions.ts` | Realtime voice + text coach (gpt-4o-realtime-preview / gpt-4o-mini) |
-| `GHL_ACCESS_TOKEN` | `crm.server.ts` | Upsert contact, push custom fields, swap zone tags |
-| `GHL_LOCATION_ID` | `crm.server.ts` | Optional override for the CRM location (fallback `VILrXHbgEue1XhjlpuVJ`) |
+- Private Mode defaults on. Audit answers, evidence, goal fields, framework, snapshots and the creation plan stay in account-scoped browser storage.
+- Turn Private Mode off and choose **Save progress to account** before changing devices. On the other device, verify the same email, open **Your saved progress**, turn Private Mode off and choose **Restore from account**.
+- These are explicit saves/restores, not automatic background sync. An account version prevents stale devices from overwriting newer saves. Export local progress before resolving a conflict. The JSON export is a safety copy; file import is not implemented.
+- New-device setup includes a link to saved progress. The original unscoped browser audit is offered only through an explicit ownership-confirmed import. It remains intact, is not automatically assigned to the first person who signs in, and is not automatically uploaded. Do not clear browser storage during rollout.
+- Secondary features (assessment results, SRS, coach roster, commitments, intervention history) remain account-scoped **device-local** data in this release. They are not included in cross-device progress yet.
+- Existing in-memory server audit data cannot be recovered after its isolate disappears. CRM summary fields cannot reconstruct missing audit answers. Do not represent either as a recoverable full backup.
+- The old unversioned `/api/audit/save` and `/api/trajectory/snapshot` writes return 410. The updated UI saves the complete versioned progress record. Cloud saves do not send audit contents to CRM.
 
-Set both `OPENAI_API_KEY` and `GHL_ACCESS_TOKEN` before publishing. The scoring
-engine, radar, leverage sorter, trajectory chart, and audit all work with no
-secrets — voice/text coach and CRM sync return a clear "not configured" message
-until the keys are set.
+## Plans and payments
 
----
+The server reads plan, status and expiry from `bula_entitlements` on every authenticated operation. Free accounts have one AI request/day and three cloud snapshots. Paid feature checks protect voice, Digital Twin and Calibration; usage is atomically limited. Existing local-only premium calculations are UI features, not confidential server resources. Admin UI tier previews never change server permissions.
 
-## 2. CRM custom fields & tags (one-time setup)
+Client checkout return URLs and CRM tags do **not** activate a plan. A trusted payment adapter must verify payment/subscription state with the billing provider and send the contract below. An order form submission by itself is insufficient. This branch supplies the receiver, not a deployed provider adapter.
 
-The app writes these custom field keys onto each contact. Create them in your
-CRM under **Settings → Custom Fields → Contacts**:
+`POST /api/webhooks/checkout`:
 
-- `40pt_voltage` (number)
-- `40pt_raw_score` (number)
-- `40pt_zone` (text)
-- `40pt_teachability_pct` (number)
-- `40pt_peak` (number)
-- `40pt_snapshots` (number)
-- `40pt_chief_aim` (text)
-
-Zone tags are applied/removed automatically on every sync so a contact carries
-exactly **one** active zone tag — the trigger signal for zone-crossing workflows:
-
-- `40pt-friction-zone`
-- `40pt-emergence-zone`
-- `40pt-operative-active`
-
-Recommended workflow triggers:
-- Tag added = `40pt-emergence-zone` → "Emergence reached" coaching sequence
-- Tag added = `40pt-operative-active` → "Operative Active" celebration + next-tier assignment
-- Tag removed = `40pt-operative-active` → "Relapse check-in" sequence
-
----
-
-## 3. Connecting Cloudflare D1 / KV / R2 (persistent storage)
-
-> **Today** the app runs on the in-isolate store + CRM custom fields as its
-> durable mirror — it is fully functional without D1/KV/R2. The bindings below
-> upgrade persistence from "per-isolate, CRM-mirrored" to "shared durable
-> across all isolates" so multi-user cloud sync survives cold starts. They are
-> **optional** — add them when you are ready to scale beyond local/CRM storage.
-
-### 3a. D1 — relational database (audit scores, snapshots, sessions)
-
-D1 holds the durable rows: `audit_scores`, `chief_aims`,
-`trajectory_snapshots`, and `coaching_sessions`.
-
-```bash
-# 1. Create the database
-npx wrangler d1 create bula-creation-db
-# Copy the returned database_id into wrangler.toml (see 3d)
-
-# 2. Apply the schema
-npx wrangler d1 execute bula-creation-db --file=./schema.sql
+```json
+{
+  "eventId": "unique-provider-event-id",
+  "email": "verified-purchaser@example.com",
+  "plan": "pro",
+  "status": "active",
+  "expiresAt": "2026-11-10T00:00:00.000Z",
+  "occurredAt": "2026-10-10T00:00:00.000Z"
+}
 ```
 
-`schema.sql` (create at repo root):
+Set `GHL_WEBHOOK_SECRET` to a securely generated secret of at least 32 characters on the app and trusted adapter. Send `X-Bula-Timestamp` (current Unix seconds) and `X-Bula-Signature` (lowercase hex HMAC-SHA256 of `timestamp + '.' + exact raw JSON body`). Retries need a fresh timestamp/signature and the same event ID. Signatures expire after five minutes. The receiver caps bodies at 16 KiB, deduplicates events and ignores older entitlement updates in one database transaction. It acknowledges only after persistence succeeds.
 
-```sql
-CREATE TABLE IF NOT EXISTS audit_scores (
-  contact_id    TEXT NOT NULL,
-  point_number  INTEGER NOT NULL,
-  tier          TEXT NOT NULL,
-  points_earned REAL NOT NULL,
-  updated_at    INTEGER NOT NULL,
-  PRIMARY KEY (contact_id, point_number)
-);
+Allowed plans: `free`, `pro`, `performance`, `coach`, `coach_pro`. Status: `active`, `trialing`, `cancelled`, `expired`. Cancellation immediately removes access: for cancel-at-period-end, send active with the paid-through expiry and cancel only when access should end. Trials need a verified provider expiry. A calibration purchase maps to Coach with its verified 60-day expiry. The adapter must preserve higher concurrent subscriptions: the receiver stores one effective entitlement per email, not a multi-subscription ledger. Treat equal-time conflicting events and refund/chargeback ordering through provider reconciliation before signing. Email changes and reconciliation require an operator workflow.
 
-CREATE TABLE IF NOT EXISTS chief_aims (
-  contact_id          TEXT PRIMARY KEY,
-  aim                TEXT,
-  specificity        TEXT,
-  disgust_factor     TEXT,
-  believability      REAL,
-  handwriting_script TEXT,
-  updated_at         INTEGER NOT NULL
-);
+Populate the public checkout URLs in `.env.example` only after verifying each product, GBP price, interval and return destination. Annual URLs never fall back to monthly. Missing URLs show checkout unavailable. Use the same verified email at checkout. Do not enable purchases until the signed adapter is working; otherwise payments will not unlock access.
 
-CREATE TABLE IF NOT EXISTS trajectory_snapshots (
-  id                       TEXT PRIMARY KEY,
-  contact_id               TEXT NOT NULL,
-  total_voltage            INTEGER NOT NULL,
-  raw_points               REAL NOT NULL,
-  teachability_multiplier  REAL NOT NULL,
-  pillar_scores            TEXT NOT NULL,
-  zone                     TEXT NOT NULL,
-  created_at               INTEGER NOT NULL
-);
+Required staging payment scenarios: free denied paid RPC, successful test purchase, renewal, expired trial, cancel-at-period-end, immediate refund, duplicate event, delayed older event, wrong email, failed persistence/retry and admin separation. No live charge is needed. The local suite covers receiver/entitlement behavior; it does not verify actual Stripe/GHL products, email delivery or checkout workflows.
 
-CREATE TABLE IF NOT EXISTS coaching_sessions (
-  id          TEXT PRIMARY KEY,
-  contact_id  TEXT NOT NULL,
-  persona     TEXT NOT NULL,
-  created_at  INTEGER NOT NULL
-);
+## Local verification
 
-CREATE INDEX IF NOT EXISTS idx_scores_contact   ON audit_scores(contact_id);
-CREATE INDEX IF NOT EXISTS idx_snap_contact_time ON trajectory_snapshots(contact_id, created_at DESC);
+Use Node 22+. `npm ci --ignore-scripts`, `npm test`, `npm run build`, `npm run typecheck`. `package-lock.json` pins the npm verification environment. Existing type errors and dependency audit findings are recorded in `SECURITY-QA.md`; do not interpret a successful Vite build as a clean typecheck.
+
+For an isolated browser test with no external credentials or messages:
+
+```sh
+node tests/fixtures/backend.mjs
+# In a second terminal:
+SUPABASE_URL=http://127.0.0.1:4319 SUPABASE_ANON_KEY=fixture-public-key SUPABASE_SERVICE_ROLE_KEY=fixture-service-key npm run dev -- --host 127.0.0.1 --port 4320
 ```
 
-To consume the binding, read `env.DB` inside a `createServerFn` handler (or a
-server route) — e.g. replace the in-isolate store in
-`src/lib/diagnostic/store.server.ts` with D1 prepared statements. Keep the
-`process.env`/binding reads **inside** the handler; the edge runtime injects
-them at call time.
+The fixture runs the migration on embedded PostgreSQL, binds loopback only and accepts only `@example.com` test emails with code `123456`. It is not part of the app runtime and must never be exposed or used in production. HTTP backend URLs are rejected in production. The methodology fallback plan can be tested without an OpenAI key; real AI and voice require staging keys and separate validation.
 
-### 3b. KV — session / ephemeral state cache
+## Cutover and rollback
 
-KV is used for short-lived, read-often state (active session lookup, rate-limit
-counters) that does not need D1's relational guarantees.
+Before publishing: verify real email delivery and expiry/reuse rejection, two independent devices and two distinct accounts, owner role bootstrap, cross-origin and unauthenticated rejection, backups, payment adapter, mobile login and sign-out. Preserve existing browser data. Deploy from the reviewed branch using the established platform workflow; no custom DNS or new Worker is required.
 
-```bash
-npx wrangler kv namespace create bula-creation-kv
-# Copy the returned id into wrangler.toml
-```
-
-Use `env.KV` inside handlers: `env.KV.put(key, value)`, `env.KV.get(key)`. Keep
-all binding access inside `createServerFn` handlers or server routes — never at
-module scope.
-
-### 3c. R2 — object storage (larger artifacts)
-
-R2 is for larger blobs that do not belong in D1 or KV — exported audit reports,
-audio transcripts, generated handwriting images, PDF "Creation Reports".
-
-```bash
-npx wrangler r2 bucket create bula-creation-assets
-```
-
-Access via `env.ASSETS` (`env.ASSETS.put(key, body)`, `env.ASSETS.get(key)`)
-inside handlers. Same boundary rules as D1/KV.
-
-### 3d. `wrangler.toml` (bindings)
-
-Once the resources above exist, add a `wrangler.toml` at repo root so the
-deploy picks up the bindings:
-
-```toml
-name = "bula-creation"
-main = "dist/.output/server/index.mjs"
-compatibility_date = "2024-12-01"
-compatibility_flags = ["nodejs_compat"]
-
-[vars]
-# GHL_LOCATION_ID can also be set here, but a secret is safer.
-
-[[d1_databases]]
-binding       = "DB"
-database_name = "bula-creation-db"
-database_id   = "PASTE_D1_DATABASE_ID"
-
-[[kv_namespaces]]
-binding = "KV"
-id      = "PASTE_KV_NAMESPACE_ID"
-
-[[r2_buckets]]
-binding = "ASSETS"
-bucket_name = "bula-creation-assets"
-```
-
-> The current app is the same-origin TanStack build. The bindings above become
-> available once you wire `store.server.ts` (and any new routes) to read them.
-> They are additive — the app keeps working with the in-isolate store until you
-> flip the implementation over.
-
----
-
-## 4. Custom domain (`bulacreation.app`)
-
-1. **Cloudflare DNS** — add the apex `bulacreation.app` and `www` as
-   `CNAME`/`A` records pointing at the platform's deploy target (the publish
-   action outputs the exact target). If the domain is already on Cloudflare,
-   set the records to "Proxied".
-2. **Publish** the app via the platform deploy action.
-3. In the deploy dashboard, attach `bulacreation.app` (and `www`) as custom
-   domains so the edge serves them with TLS.
-4. (Optional) Point `api.bulacreation.app` at the Worker if you later split the
-   API onto its own subdomain — not required for the same-origin build.
-
-Verify after attaching:
-
-- `https://bulacreation.app/login` loads the magic-link screen.
-- `https://bulacreation.app/vsl` loads the public funnel.
-- `https://bulacreation.app/terms`, `/privacy`, `/support` load the legal pages.
-
----
-
-## 5. Run locally
-
-```bash
-npm install
-npm run dev
-```
-
-Open the preview. The scoring engine, radar, leverage sorter, trajectory chart,
-and audit all work with no secrets. Voice coach and text coach return a clear
-"not configured" message until `OPENAI_API_KEY` is set.
-
----
-
-## 6. Publish
-
-Publish through the platform deploy action. Secrets are injected at request
-time on the edge runtime — no `.env` file is shipped. After publishing, verify:
-
-- `POST /api/audit/save` with an email → contact appears in CRM with zone tag.
-- `/coach` → Start voice session connects over WebRTC.
-- `/coach` text mode → returns a mentor reply.
-- `/terms`, `/privacy`, `/support` → legal pages render.
-
----
-
-## 7. What was removed vs. the legacy worker
-
-| Legacy (separate wrangler worker) | Now |
-| --- | --- |
-| `wrangler d1 create` + `schema.sql` | Optional upgrade (Section 3a) — in-isolate store + CRM fields work today |
-| `wrangler kv namespace create` | Optional upgrade (Section 3b) |
-| `wrangler secret put` | Platform secrets tool (Section 1) |
-| `wrangler deploy` | Platform publish |
-| `VITE_WORKER_URL` | Not needed — same-origin `/api/*` routes |
-| `LEAD RECON_API_KEY` | Renamed `GHL_ACCESS_TOKEN` (already set) |
-
----
-
-## 8. Order-form build checklist (live checkout)
-
-The Stripe products + prices are already provisioned (see
-`src/lib/diagnostic/stripe-products.ts` for the live IDs). The app's checkout
-CTAs route to CRM order-form URLs read from env vars. Until those URLs are set,
-`/checkout/:plan` shows a clear "checkout not configured" state.
-
-Build **9 order forms** in the CRM UI: **Payments → Order Forms → + New Order
-Form**. For each form: pick the product + price below, set currency to **GBP**,
-publish, then copy the generated URL into the matching env var.
-
-### Recurring subscriptions (one product, two prices each)
-
-| # | Order form name | Product | Price | Env var to set |
-| --- | --- | --- | --- | --- |
-| 1 | BULA Pro — Monthly | Creation Pro | £19 / month | `VITE_CHECKOUT_PRO_URL` |
-| 2 | BULA Pro — Annual | Creation Pro | £190 / year | `VITE_CHECKOUT_PRO_ANNUAL_URL` |
-| 3 | BULA Performance — Monthly | Creation Performance | £39 / month | `VITE_CHECKOUT_PERFORMANCE_URL` |
-| 4 | BULA Performance — Annual | Creation Performance | £390 / year | `VITE_CHECKOUT_PERFORMANCE_ANNUAL_URL` |
-| 5 | BULA Coach — Monthly | Creation Coach | £149 / month | `VITE_CHECKOUT_COACH_URL` |
-| 6 | BULA Coach — Annual | Creation Coach | £1,490 / year | `VITE_CHECKOUT_COACH_ANNUAL_URL` |
-| 7 | BULA Coach Pro — Monthly | Creation Coach Pro | £399 / month | `VITE_CHECKOUT_COACH_PRO_URL` |
-| 8 | BULA Coach Pro — Annual | Creation Coach Pro | £3,990 / year | `VITE_CHECKOUT_COACH_PRO_ANNUAL_URL` |
-
-### One-time offer
-
-| # | Order form name | Product | Price | Env var to set |
-| --- | --- | --- | --- | --- |
-| 9 | BULA Calibration Intensive | Creation Calibration Intensive | £299 one-time | `VITE_CHECKOUT_CALIBRATION_URL` |
-
-### Post-purchase automation (build once, applies to all forms)
-
-Wire a single workflow triggered by **Order Form Submitted**:
-
-1. Add the tier tag — `bula-pro` / `bula-performance` / `bula-coach` /
-   `bula-coach-pro` (calibration → `bula-calibration` + 60-day `bula-coach` access).
-2. Move pipeline stage → `Trial Access` (Pro/Performance) or `Coach Converted`
-   (Coach/Coach Pro/Calibration).
-3. Wait 2 min → send the magic-link email: **"Bula {first_name} — Your Algorithm
-   Awaits"** with CTA `https://bulacreation.app/login?token={token}`.
-4. Coach/Coach Pro → also send SMS: **"Bula {first_name} — your BULA Creation
-   account is live. Coach access activated."**
-5. Pro/Performance trial clock → Day 7 voltage reminder, Day 13 final warning,
-   Day 14 → if not converted, move to `Churned`, remove tier tag, call
-   `POST /api/webhooks/checkout` to downgrade to Free, then Day 44 win-back email.
-
-### Verification (after env vars are set)
-
-- `/pricing` and `/vsl` CTAs → land on the correct live order form.
-- Monthly toggle → monthly URL; Annual toggle → annual URL.
-- `/checkout/calibration` → lands on the £299 one-time form.
-- After a test purchase, the contact appears in CRM with the correct tier tag +
-  pipeline stage, and the magic-link email fires.
+If the release fails, put the app into maintenance while repairing configuration or forward-fixing. Do not restore the insecure email-only login or trust old local entitlement flags. Database migration is additive; keep verified user/progress rows and backups during recovery. The signed webhook contract is a breaking integration change and must be coordinated with its sender.

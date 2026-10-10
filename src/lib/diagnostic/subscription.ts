@@ -1,14 +1,5 @@
-// Subscription & entitlement layer (spec §13).
-//
-// Defines the commercial plan ladder and the feature gates that map each plan
-// to a set of entitlements. The provider (subscription-context.tsx) persists
-// the active plan + trial state to localStorage and exposes a `useSubscription`
-// hook that routes/components use to gate premium features behind a paywall.
-//
-// V1 note: this is a local entitlement layer (no billing backend yet). It is
-// structured so a real billing provider (Stripe / platform subscriptions) can
-// later write the same `PlanKey` + `status` into the persisted shape — the
-// gating logic below stays unchanged.
+// Shared plan definitions. The server resolves paid access from durable billing
+// records; the browser context only displays those verified entitlements.
 
 export type PlanKey = "free" | "pro" | "performance" | "coach" | "coach_pro";
 
@@ -273,7 +264,7 @@ export function planRank(key: PlanKey): number {
 }
 
 export function resolvePlan(key: string | undefined | null): PlanKey {
-  if (key && key in PLANS) return key as PlanKey;
+  if (key && Object.hasOwn(PLANS, key)) return key as PlanKey;
   return DEFAULT_PLAN;
 }
 

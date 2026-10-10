@@ -150,11 +150,11 @@ function CoachComponent() {
         effDigest,
         tDigest,
       );
-      const res = await ask({
+      const res = await ask({ data: {
         persona,
         messages: next.map((m) => ({ role: m.role, content: m.content })),
         context: formatContextBlock(ctx),
-      });
+      } });
       if (res.ok) {
         setMessages([...next, { role: "assistant", content: res.content }]);
         // Parse a structured ASSIGNMENT: line into a tracked 48-hr commitment.

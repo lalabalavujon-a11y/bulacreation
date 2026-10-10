@@ -1,3 +1,4 @@
+import { accountStorage } from "@/lib/diagnostic/local-storage";
 // SRS context — persists the card deck to localStorage and exposes review +
 // management actions. Mirrors the DiagnosticProvider pattern.
 import { createContext, useContext, useEffect, useState, useCallback, type ReactNode } from "react";
@@ -43,7 +44,7 @@ const LS_KEY = "creation-srs-state-v1";
 function load(): SrsCard[] {
   if (typeof window === "undefined") return [];
   try {
-    const raw = window.localStorage.getItem(LS_KEY);
+    const raw = accountStorage.getItem(LS_KEY);
     if (!raw) return [];
     const parsed = JSON.parse(raw) as SrsCard[];
     if (!Array.isArray(parsed)) return [];
@@ -65,7 +66,7 @@ export function SrsProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     if (!hydrated) return;
     try {
-      window.localStorage.setItem(LS_KEY, JSON.stringify(cards));
+      accountStorage.setItem(LS_KEY, JSON.stringify(cards));
     } catch {
       /* ignore quota */
     }

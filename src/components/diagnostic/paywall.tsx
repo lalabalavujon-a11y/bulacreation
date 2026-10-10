@@ -83,7 +83,7 @@ export function PaywallGate({
           )}
           {upgradePlan && (
             <p className="text-xs text-muted-foreground">
-              From {upgradePlan.priceLabel}/month · 14-day free trial
+              From {upgradePlan.priceLabel}/month
             </p>
           )}
         </div>
@@ -102,7 +102,7 @@ export function UpgradeModal({
   onClose: () => void;
   feature?: FeatureKey;
 }) {
-  const { activatePlan, plan: currentPlan } = useSubscription();
+  const { plan: currentPlan } = useSubscription();
 
   if (!open) return null;
 
@@ -129,7 +129,7 @@ export function UpgradeModal({
           <div>
             <h2 className="font-display text-xl font-bold text-foreground">Choose your plan</h2>
             <p className="text-sm text-muted-foreground">
-              Start a 14-day free trial. Cancel anytime.
+              Review the current price and any trial terms at checkout.
             </p>
           </div>
           <button
@@ -177,7 +177,7 @@ export function UpgradeModal({
                 <button
                   disabled={isCurrent}
                   onClick={() => {
-                    activatePlan(p.key, true);
+                    window.location.assign(p.key === "free" ? "/support" : `/checkout/${p.key}`);
                     onClose();
                   }}
                   className={cn(
@@ -193,7 +193,7 @@ export function UpgradeModal({
                     ? "Current plan"
                     : isDowngrade
                       ? "Switch to this plan"
-                      : `Start free trial`}
+                      : `View checkout`}
                 </button>
               </div>
             );
@@ -206,7 +206,7 @@ export function UpgradeModal({
 
 /** Small inline badge showing the active plan, for the sidebar / header. */
 export function PlanBadge() {
-  const { plan, status, onTrial } = useSubscription();
+  const { plan, status } = useSubscription();
   const p = PLANS[plan];
   if (plan === "free" && status === "none") {
     return (
@@ -219,12 +219,12 @@ export function PlanBadge() {
       </Link>
     );
   }
-  const isSuperAdmin = plan === "coach_pro" && status === "active" && !onTrial;
+  const isSuperAdmin = plan === "coach_pro" && status === "active";
   return (
     <span className="inline-flex items-center gap-1.5 rounded-full bg-gold/15 px-2.5 py-1 text-[11px] font-medium text-gold">
       {isSuperAdmin && <Sparkles className="size-3" />}
       {p.name}
-      {onTrial && <span className="text-gold-soft">· trial</span>}
+
     </span>
   );
 }

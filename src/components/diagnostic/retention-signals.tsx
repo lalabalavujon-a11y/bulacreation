@@ -1,3 +1,4 @@
+import { accountStorage } from "@/lib/diagnostic/local-storage";
 // Retention / anti-churn signals panel (spec §13.4).
 // Surfaces missed audits, stagnant velocity, low completion, and philosophy
 // churn — each triggers a re-engagement intervention. Shown on Overview so
@@ -22,18 +23,18 @@ export function RetentionSignals() {
   const [philHistory, setPhilHistory] = useState<string[]>([]);
   useEffect(() => {
     try {
-      const raw = window.localStorage.getItem("creation-philosophy-history");
+      const raw = accountStorage.getItem("creation-philosophy-history");
       setPhilHistory(raw ? JSON.parse(raw) : []);
     } catch {
       setPhilHistory([]);
     }
     // Record current philosophy on mount.
     try {
-      const raw = window.localStorage.getItem("creation-philosophy-history");
+      const raw = accountStorage.getItem("creation-philosophy-history");
       const hist: string[] = raw ? JSON.parse(raw) : [];
       if (hist[hist.length - 1] !== philosophy) {
         const next = [...hist, philosophy].slice(-10);
-        window.localStorage.setItem("creation-philosophy-history", JSON.stringify(next));
+        accountStorage.setItem("creation-philosophy-history", JSON.stringify(next));
         setPhilHistory(next);
       }
     } catch {

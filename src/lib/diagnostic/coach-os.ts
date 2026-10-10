@@ -1,3 +1,4 @@
+import { accountStorage } from "@/lib/diagnostic/local-storage";
 // Coach OS — multi-client roster for professional coaches (spec §12).
 //
 // A coach manages N clients. Each client is a named "roster slot" pointing at
@@ -52,7 +53,7 @@ export interface ClientProfile {
 export function loadRoster(): ClientSlot[] {
   if (typeof window === "undefined") return [];
   try {
-    const raw = window.localStorage.getItem(ROSTER_KEY);
+    const raw = accountStorage.getItem(ROSTER_KEY);
     return raw ? (JSON.parse(raw) as ClientSlot[]) : [];
   } catch {
     return [];
@@ -62,7 +63,7 @@ export function loadRoster(): ClientSlot[] {
 export function saveRoster(list: ClientSlot[]): void {
   if (typeof window === "undefined") return;
   try {
-    window.localStorage.setItem(ROSTER_KEY, JSON.stringify(list));
+    accountStorage.setItem(ROSTER_KEY, JSON.stringify(list));
   } catch {
     /* ignore */
   }
@@ -104,7 +105,7 @@ export function removeClient(id: string): ClientSlot[] {
 export function loadAllProfiles(): Record<string, ClientProfile> {
   if (typeof window === "undefined") return {};
   try {
-    const raw = window.localStorage.getItem(PROFILES_KEY);
+    const raw = accountStorage.getItem(PROFILES_KEY);
     return raw ? (JSON.parse(raw) as Record<string, ClientProfile>) : {};
   } catch {
     return {};
@@ -114,7 +115,7 @@ export function loadAllProfiles(): Record<string, ClientProfile> {
 export function saveAllProfiles(map: Record<string, ClientProfile>): void {
   if (typeof window === "undefined") return;
   try {
-    window.localStorage.setItem(PROFILES_KEY, JSON.stringify(map));
+    accountStorage.setItem(PROFILES_KEY, JSON.stringify(map));
   } catch {
     /* ignore */
   }

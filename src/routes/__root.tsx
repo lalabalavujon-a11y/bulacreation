@@ -134,7 +134,7 @@ const NAV = [
 ] as const;
 
 function Sidebar() {
-  const { name, email } = useAuth();
+  const { name, email, isAdmin } = useAuth();
   const { entitlements } = useSubscription();
   const items = NAV.filter((item) => {
     const rule = NAV_VISIBILITY[item.to];
@@ -174,13 +174,13 @@ function Sidebar() {
       <div className="border-t border-sidebar-border px-5 py-4">
         <div className="mb-3 flex items-center justify-between gap-2">
           <PlanBadge />
-          {email?.trim().toLowerCase() === "lalabalavu.jon@gmail.com" && (
+          {isAdmin && (
             <span className="rounded bg-gold/20 px-1.5 py-0.5 text-[9px] font-bold uppercase tracking-wider text-gold">
               Super Admin
             </span>
           )}
         </div>
-        {email?.trim().toLowerCase() === "lalabalavu.jon@gmail.com" && <TierSimSwitcher />}
+        {isAdmin && <TierSimSwitcher />}
         {(name || email) && (
           <div className="mb-3 truncate text-[11px] leading-relaxed text-muted-foreground">
             {name && <div className="text-sidebar-foreground/80 font-medium">{name}</div>}
@@ -250,6 +250,7 @@ function TierSimSwitcher() {
 }
 
 function MobileNav() {
+  const { email } = useAuth();
   const { entitlements } = useSubscription();
   const items = NAV.filter((item) => {
     const rule = NAV_VISIBILITY[item.to];
@@ -257,7 +258,7 @@ function MobileNav() {
   });
   return (
     <nav className="sticky top-0 z-30 flex items-center gap-1 overflow-x-auto border-b border-border bg-background/90 px-3 py-2 backdrop-blur md:hidden">
-      <div className="mr-2 flex items-center gap-1.5">
+      <div className="mr-2 flex shrink-0 items-center gap-1.5">
         <img
           src="https://vibe.filesafe.space/1790355857187699269/attachments/afa0cbd8-a353-48b8-8ed0-ecc90a8d6967.png"
           alt="Bula Creation Logo"
@@ -265,6 +266,7 @@ function MobileNav() {
         />
         <span className="font-display text-xs font-bold">BULA CREATION</span>
       </div>
+      <Link to="/logout" className="shrink-0 px-2 text-xs" title={email ?? ""}>Log out</Link>
       {items.map((item) => (
         <Link
           key={item.to}
@@ -385,15 +387,20 @@ function RootComponent() {
     <QueryClientProvider client={queryClient}>
       <AuthProvider>
         <SubscriptionProvider>
-          <DiagnosticProvider>
+          <AccountProgress>
             <SrsProvider>
               <AppShell />
             </SrsProvider>
-          </DiagnosticProvider>
+          </AccountProgress>
         </SubscriptionProvider>
       </AuthProvider>
     </QueryClientProvider>
   );
+}
+
+function AccountProgress({ children }: { children: ReactNode }) {
+  const { account } = useAuth();
+  return <DiagnosticProvider key={account?.id ?? "signed-out"}>{children}</DiagnosticProvider>;
 }
 
 /** Hard auth + onboarding gate. Unauthenticated → /login. Authenticated but
@@ -422,7 +429,7 @@ function AppShell() {
   }
 
   if (!isAuthenticated) {
-    return <Outlet />;
+    return isPublic ? <Outlet /> : null;
   }
 
   return (

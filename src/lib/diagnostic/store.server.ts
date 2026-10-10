@@ -1,7 +1,9 @@
+import { readProgress } from "../security/progress.server";
+import { computeScore } from "./scoring";
+import { db } from "../security/database.server";
+import { requireAccount } from "../security/session.server";
 // Server-only audit + trajectory persistence store.
-// NOTE: This edge template has no D1/KV binding, so these in-memory maps are
-// ephemeral (per-isolate). They serve the preview/local path. Durable cloud
-// persistence is mirrored to CRM custom fields — see crm.server.ts.
+// Durable storage; every query is scoped to the verified account.
 import { z } from "zod";
 
 export const AuditPayloadSchema = z.object({
@@ -47,39 +49,33 @@ export interface StoredSnapshot extends SnapshotPayload {
   id: string;
 }
 
-const audits = new Map<string, AuditPayload>();
-const snapshots = new Map<string, StoredSnapshot>();
-let auditOrder: string[] = [];
-
-export function saveAudit(p: AuditPayload): AuditPayload {
-  audits.set(p.id, p);
-  auditOrder = auditOrder.filter((x) => x !== p.id).concat(p.id);
-  return p;
+export async function saveAudit(p: AuditPayload): Promise<AuditPayload> {
+  const account = await requireAccount();
+  const data = { ...p, email: account.email };
+  await db("bula_audits?on_conflict=user_id,id", { method: "POST", headers: { Prefer: "resolution=merge-duplicates" }, body: JSON.stringify({ user_id: account.id, id: p.id, data, updated_at: new Date().toISOString() }) });
+  return data;
 }
-
-export function getAudit(id: string): AuditPayload | null {
-  return audits.get(id) ?? null;
+export async function getAudit(id: string): Promise<AuditPayload | null> {
+  const account = await requireAccount();
+  const rows = await db<{ data: AuditPayload }[]>(`bula_audits?user_id=eq.${encodeURIComponent(account.id)}&id=eq.${encodeURIComponent(id)}&select=data&limit=1`);
+  return rows[0]?.data ?? null;
 }
-
-export function listAuditIds(): string[] {
-  return Array.from(audits.keys());
+export async function getLatestAudit(): Promise<AuditPayload | null> {
+  const saved = await readProgress();
+  if (!saved) return null;
+  const p = saved.data;
+  const result = computeScore(p.scores);
+  return { id: "current", scores: p.scores, chiefAim: p.chiefAim.text, final: result.finalRounded,
+    raw: Math.round(result.raw), zone: result.zone, teachabilityPct: result.teachabilityFactor * 100,
+    peak: p.snapshots.reduce((n, s) => Math.max(n, s.final), 0), snapshots: p.snapshots.length,
+    ts: Date.parse(saved.updatedAt) };
 }
-
-export function getLatestAudit(): AuditPayload | null {
-  if (auditOrder.length === 0) return null;
-  return audits.get(auditOrder[auditOrder.length - 1]) ?? null;
-}
-
-export function saveSnapshot(p: SnapshotPayload): StoredSnapshot {
-  const id = p.id ?? `snap_${p.ts}`;
-  const rec: StoredSnapshot = { ...p, id };
-  snapshots.set(id, rec);
+export async function saveSnapshot(p: SnapshotPayload): Promise<StoredSnapshot> {
+  const account = await requireAccount();
+  const id = p.id ?? crypto.randomUUID();
+  const rec = { ...p, id, contactId: account.id };
+  await db("bula_snapshots?on_conflict=user_id,id", { method: "POST", headers: { Prefer: "resolution=merge-duplicates" }, body: JSON.stringify({ user_id: account.id, id, data: rec }) });
   return rec;
-}
-
-export function listSnapshots(contactId?: string): StoredSnapshot[] {
-  const all = Array.from(snapshots.values()).sort((a, b) => a.ts - b.ts);
-  return contactId ? all.filter((s) => s.contactId === contactId) : all;
 }
 
 /**

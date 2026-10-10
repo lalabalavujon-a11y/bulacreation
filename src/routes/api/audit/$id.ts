@@ -5,7 +5,7 @@ export const Route = createFileRoute("/api/audit/$id")({
   server: {
     handlers: {
       GET: async ({ params }) => {
-        const rec = getAudit(params.id);
+        const rec = await getAudit(params.id);
         if (!rec) {
           return new Response("Audit not found", { status: 404 });
         }

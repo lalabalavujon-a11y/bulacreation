@@ -1,3 +1,7 @@
+import { accountStorage } from "@/lib/diagnostic/local-storage";
+import type { CreationPlan } from "./creation-plan.functions";
+import { loadProgress, saveProgress } from "./progress.functions";
+import { ProgressSchema, type Progress } from "../security/progress";
 import { createContext, useContext, useEffect, useState, useCallback, type ReactNode } from "react";
 import type { Scores, ScoreResult } from "./scoring";
 import { computeScore } from "./scoring";
@@ -10,7 +14,7 @@ export interface Snapshot {
   final: number;
   raw: number;
   zone: ScoreResult["zone"];
-  label?: string;
+  label?: string | undefined;
 }
 
 export interface ChiefAim {
@@ -26,6 +30,17 @@ export interface ChiefAim {
 export type EvidenceNotes = Record<number, string>;
 
 interface DiagnosticState {
+  creationPlan: CreationPlan | null;
+  setCreationPlan: (plan: CreationPlan | null) => void;
+  saveCloud: () => Promise<void>;
+  restoreCloud: () => Promise<void>;
+  exportProgress: () => void;
+  importLegacy: () => void;
+  hasLegacy: boolean;
+  syncMessage: string;
+  syncBusy: boolean;
+  dirty: boolean;
+
   scores: Scores;
   evidenceNotes: EvidenceNotes;
   chiefAim: ChiefAim;
@@ -61,6 +76,8 @@ const DiagnosticContext = createContext<DiagnosticState | null>(null);
 const LS_KEY = "creation-algorithm-state-v1";
 
 interface PersistShape {
+  creationPlan: CreationPlan | null;
+  cloudVersion: number;
   scores: Scores;
   evidenceNotes: EvidenceNotes;
   chiefAim: ChiefAim;
@@ -72,6 +89,8 @@ interface PersistShape {
 
 function load(): PersistShape {
   const base: PersistShape = {
+    creationPlan: null,
+    cloudVersion: 0,
     scores: {},
     evidenceNotes: {},
     chiefAim: DEFAULT_AIM,
@@ -82,10 +101,12 @@ function load(): PersistShape {
   };
   if (typeof window === "undefined") return base;
   try {
-    const raw = window.localStorage.getItem(LS_KEY);
+    const raw = accountStorage.getItem(LS_KEY);
     if (!raw) return base;
     const parsed = JSON.parse(raw) as Partial<PersistShape>;
     return {
+      creationPlan: parsed.creationPlan ?? null,
+      cloudVersion: parsed.cloudVersion ?? 0,
       scores: parsed.scores ?? {},
       evidenceNotes: parsed.evidenceNotes ?? {},
       chiefAim: { ...DEFAULT_AIM, ...parsed.chiefAim },
@@ -107,10 +128,23 @@ export function DiagnosticProvider({ children }: { children: ReactNode }) {
   const [philosophy, setPhilosophyState] = useState<PhilosophyKey>(DEFAULT_PHILOSOPHY);
   const [privateMode, setPrivateModeState] = useState(true);
   const [onboarded, setOnboardedState] = useState(false);
+  const [creationPlan, setCreationPlan] = useState<CreationPlan | null>(null);
+  const [cloudVersion, setCloudVersion] = useState(0);
+  const [syncMessage, setSyncMessage] = useState("");
+  const [syncBusy, setSyncBusy] = useState(false);
+  const [savedData, setSavedData] = useState("");
+  const [hasLegacy, setHasLegacy] = useState(false);
   const [hydrated, setHydrated] = useState(false);
 
   useEffect(() => {
     const data = load();
+    setCreationPlan(data.creationPlan);
+    setCloudVersion(data.cloudVersion);
+    try {
+      setHasLegacy(Boolean(window.localStorage.getItem(LS_KEY)));
+    } catch {
+      /* browser storage unavailable */
+    }
     setScoresState(data.scores);
     setEvidenceNotesState(data.evidenceNotes);
     setChiefAimState(data.chiefAim);
@@ -124,6 +158,8 @@ export function DiagnosticProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     if (!hydrated) return;
     const payload: PersistShape = {
+      creationPlan,
+      cloudVersion,
       scores,
       evidenceNotes,
       chiefAim,
@@ -133,11 +169,24 @@ export function DiagnosticProvider({ children }: { children: ReactNode }) {
       onboarded,
     };
     try {
-      window.localStorage.setItem(LS_KEY, JSON.stringify(payload));
+      accountStorage.setItem(LS_KEY, JSON.stringify(payload));
     } catch {
-      /* ignore quota */
+      setSyncMessage(
+        "This browser could not save your progress. Export it now to avoid losing changes.",
+      );
     }
-  }, [scores, evidenceNotes, chiefAim, snapshots, philosophy, privateMode, onboarded, hydrated]);
+  }, [
+    scores,
+    evidenceNotes,
+    chiefAim,
+    snapshots,
+    philosophy,
+    privateMode,
+    onboarded,
+    hydrated,
+    creationPlan,
+    cloudVersion,
+  ]);
 
   const setScore = useCallback((id: number, tier: Tier) => {
     setScoresState((prev) => ({ ...prev, [id]: tier }));
@@ -183,13 +232,133 @@ export function DiagnosticProvider({ children }: { children: ReactNode }) {
     setEvidenceNotesState({});
     setChiefAimState(DEFAULT_AIM);
     setSnapshots([]);
+    setCreationPlan(null);
   }, []);
 
   const result = computeScore(scores);
+  const progress = (): Progress =>
+    ProgressSchema.parse({
+      scores,
+      evidenceNotes,
+      chiefAim,
+      snapshots,
+      philosophy,
+      onboarded,
+      creationPlan,
+    });
+  const applyProgress = (p: Progress) => {
+    setScoresState(p.scores);
+    setEvidenceNotesState(p.evidenceNotes);
+    setChiefAimState(p.chiefAim);
+    setSnapshots(p.snapshots);
+    setPhilosophyState(p.philosophy);
+    setOnboardedState(p.onboarded);
+    setCreationPlan(p.creationPlan);
+  };
+  const saveCloud = async () => {
+    if (privateMode || syncBusy) return;
+    setSyncBusy(true);
+    setSyncMessage("");
+    try {
+      const data = progress();
+      const saved = await saveProgress({
+        data: { progress: data, version: cloudVersion, privateMode },
+      });
+      setCloudVersion(saved.version);
+      setSavedData(JSON.stringify(data));
+      setSyncMessage("Progress saved to your account. You can restore it on another device.");
+    } catch (e) {
+      setSyncMessage((e as Error).message);
+    } finally {
+      setSyncBusy(false);
+    }
+  };
+  const restoreCloud = async () => {
+    if (privateMode || syncBusy) return;
+    if (
+      !window.confirm(
+        "Restore your account's cloud copy on this device? Export this device's progress first if you want to keep it.",
+      )
+    )
+      return;
+    setSyncBusy(true);
+    setSyncMessage("");
+    try {
+      const saved = await loadProgress();
+      if (!saved) {
+        setSyncMessage("No cloud progress exists yet. Save from your original device first.");
+        return;
+      }
+      applyProgress(saved.data);
+      setCloudVersion(saved.version);
+      setSavedData(JSON.stringify(saved.data));
+      setSyncMessage("Cloud progress restored on this device.");
+    } catch (e) {
+      setSyncMessage((e as Error).message);
+    } finally {
+      setSyncBusy(false);
+    }
+  };
+  const exportProgress = () => {
+    const url = URL.createObjectURL(
+      new Blob([JSON.stringify(progress(), null, 2)], { type: "application/json" }),
+    );
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = "bula-progress.json";
+    link.click();
+    URL.revokeObjectURL(url);
+  };
+  const importLegacy = () => {
+    if (
+      !window.confirm(
+        "Only import if the old progress on this browser belongs to you. It will replace this account's local progress. The original copy is preserved.",
+      )
+    )
+      return;
+    try {
+      const raw = window.localStorage.getItem(LS_KEY);
+      if (!raw) return;
+      const old = JSON.parse(raw);
+      const parsed = ProgressSchema.parse({
+        ...old,
+        evidenceNotes: old.evidenceNotes ?? {},
+        creationPlan: old.creationPlan ?? null,
+      });
+      applyProgress(parsed);
+      setPrivateModeState(true);
+      setSyncMessage(
+        "Old browser progress imported locally. Private Mode is on; no data was uploaded.",
+      );
+    } catch {
+      setSyncMessage("Could not import old progress. The original remains untouched.");
+    }
+  };
+  const dirty =
+    savedData !==
+    JSON.stringify({
+      scores,
+      evidenceNotes,
+      chiefAim,
+      snapshots,
+      philosophy,
+      onboarded,
+      creationPlan,
+    });
 
   return (
     <DiagnosticContext.Provider
       value={{
+        creationPlan,
+        setCreationPlan,
+        saveCloud,
+        restoreCloud,
+        exportProgress,
+        importLegacy,
+        hasLegacy,
+        syncMessage,
+        syncBusy,
+        dirty,
         scores,
         evidenceNotes,
         chiefAim,

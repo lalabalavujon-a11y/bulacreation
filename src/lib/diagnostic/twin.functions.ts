@@ -1,3 +1,4 @@
+import { consumeAi, requireFeature } from "../security/session.server";
 // Twin reasoning — the "what causes *this* person to move" AI layer (spec §9).
 //
 // Thin server-function wrapper. All logic lives in the handler so the
@@ -14,6 +15,8 @@ const InputSchema = z.object({
 export const twinReasoning = createServerFn({ method: "POST" })
   .validator((data) => InputSchema.parse(data))
   .handler(async ({ data }) => {
+    await requireFeature("digitalTwin");
+    await consumeAi();
     const apiKey = process.env.OPENAI_API_KEY;
     if (!apiKey) {
       return {

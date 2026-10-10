@@ -1,3 +1,4 @@
+import { accountStorage } from "@/lib/diagnostic/local-storage";
 // Intervention Effectiveness Engine — the "Learn" stage of the agent loop
 // (spec §6.1, §8.2). Pure, browser-safe.
 //
@@ -39,7 +40,7 @@ const KEY = "creation-interventions-v1";
 export function loadInterventions(): Intervention[] {
   if (typeof window === "undefined") return [];
   try {
-    const raw = window.localStorage.getItem(KEY);
+    const raw = accountStorage.getItem(KEY);
     return raw ? (JSON.parse(raw) as Intervention[]) : [];
   } catch {
     return [];
@@ -49,7 +50,7 @@ export function loadInterventions(): Intervention[] {
 export function saveInterventions(list: Intervention[]): void {
   if (typeof window === "undefined") return;
   try {
-    window.localStorage.setItem(KEY, JSON.stringify(list));
+    accountStorage.setItem(KEY, JSON.stringify(list));
   } catch {
     /* ignore quota */
   }

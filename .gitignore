@@ -31,3 +31,7 @@ src/tailwind.config.vibe.json
 *.njsproj
 *.sln
 *.sw?
+
+# Authentication and billing secrets
+.env*
+!.env.example

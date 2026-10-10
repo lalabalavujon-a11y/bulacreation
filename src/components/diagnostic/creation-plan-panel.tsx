@@ -31,9 +31,8 @@ import {
 } from "lucide-react";
 
 export function CreationPlanPanel() {
-  const { result, chiefAim, philosophy } = useDiagnostic();
+  const { result, chiefAim, philosophy, creationPlan: plan, setCreationPlan: setPlan } = useDiagnostic();
   const generate = useServerFn(generateCreationPlan);
-  const [plan, setPlan] = useState<CreationPlan | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [executed, setExecuted] = useState(false);
@@ -53,7 +52,7 @@ export function CreationPlanPanel() {
     setExecuted(false);
     try {
       const ctx = buildCoachContext(result, chiefAim, "none");
-      const res = await generate({
+      const res = await generate({ data: {
         persona,
         philosophy,
         voltage: result.finalRounded,
@@ -68,7 +67,7 @@ export function CreationPlanPanel() {
           ] || "Friction",
         openCommitments: 0,
         contextBlock: formatContextBlock(ctx),
-      });
+      } });
       setPlan(res);
     } catch (e) {
       setError((e as Error).message);

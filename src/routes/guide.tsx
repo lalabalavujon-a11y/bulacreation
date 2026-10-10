@@ -5,7 +5,7 @@ import { FEATURES, FEATURE_GROUPS, TIER_META, type FeatureEntry } from "@/lib/di
 import { BUILD_SKILLS, BUILD_SKILL_CATEGORIES } from "@/lib/build-skills";
 import { useAuth } from "@/lib/diagnostic/auth-context";
 import { useSubscription } from "@/lib/diagnostic/subscription-context";
-import { isSuperAdminEmail } from "@/lib/diagnostic/checkout";
+
 import { ArrowRight, Lock, Target, Sparkles, Wrench, ShieldCheck } from "lucide-react";
 
 export const Route = createFileRoute("/guide")({
@@ -71,10 +71,10 @@ const WEEKLY = [
 ];
 
 function GuideComponent() {
-  const { email } = useAuth();
+  const { isAdmin: serverAdmin } = useAuth();
   const { simulatedTier } = useSubscription();
   // Only expose Super Admin internals when the user is the real super admin AND not currently simulating a lower user tier (e.g. Free, Pro)
-  const isAdmin = isSuperAdminEmail(email) && simulatedTier === null;
+  const isAdmin = serverAdmin && simulatedTier === null;
 
   return (
     <div className="space-y-10">

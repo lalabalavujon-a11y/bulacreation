@@ -3,7 +3,7 @@
 // - Free plan → send to /login (no order form needed).
 // - Paid plan with a live order-form URL → redirect to the external GHL
 //   order form (Stripe-backed). The order form handles payment, tagging,
-//   pipeline-stage move, and the post-purchase magic-link workflow.
+//   pipeline-stage move. Only verified server billing events activate access.
 // - Paid plan with no configured URL → show a "checkout not yet connected"
 //   panel so the CTA degrades gracefully instead of 404ing.
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
@@ -35,7 +35,7 @@ function CheckoutComponent() {
   const navigate = useNavigate();
 
   const isOneTime = rawPlan === "calibration";
-  const planKey = !isOneTime && (rawPlan as PlanKey) in PLANS ? (rawPlan as PlanKey) : null;
+  const planKey = !isOneTime && Object.hasOwn(PLANS, rawPlan) ? (rawPlan as PlanKey) : null;
 
   useEffect(() => {
     if (isOneTime) {
@@ -91,7 +91,7 @@ function CheckoutComponent() {
               Taking you to secure checkout for <span className="text-foreground">{plan.name}</span>{" "}
               (
               {billing === "yearly"
-                ? `${plan.priceLabel} billed annually`
+                ? `£${plan.priceYearly} billed annually`
                 : `${plan.priceLabel}/mo`}
               ).
             </p>
@@ -109,11 +109,10 @@ function CheckoutComponent() {
             <div className="flex items-start gap-2">
               <AlertCircle className="mt-0.5 size-5 shrink-0 text-gold" />
               <div>
-                <h1 className="font-display text-lg font-semibold">Checkout is connecting</h1>
+                <h1 className="font-display text-lg font-semibold">Checkout is unavailable</h1>
                 <p className="mt-2 text-sm text-muted-foreground">
-                  The <span className="text-foreground">{plan.name}</span> order form is being
-                  provisioned. Once Stripe is connected to the BULA Creation sub-account, this
-                  button will take you straight to secure checkout.
+                  Checkout for <span className="text-foreground">{plan.name}</span> is not available
+                  yet. You can keep using Free or contact support for help.
                 </p>
               </div>
             </div>
@@ -208,9 +207,8 @@ function CalibrationCheckout() {
               ))}
             </ul>
             <p className="mt-4 text-xs text-muted-foreground">
-              The order form is being provisioned. Once Stripe is connected to the BULA Creation
-              sub-account, this button takes you straight to secure checkout — no calendar booking,
-              the intensive starts the moment you enter.
+              This intensive is not available to purchase yet. You can keep using Free or contact
+              support for help.
             </p>
             <div className="mt-5 flex flex-wrap gap-2">
               <Link

@@ -83,35 +83,7 @@ function TrajectoryComponent() {
       });
       return;
     }
-    setCloudBusy(true);
-    setCloudMsg(null);
-    try {
-      const res = await fetch("/api/trajectory/snapshot", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          contactId: contactId ?? undefined,
-          totalVoltage: result.finalRounded,
-          rawPoints: Math.round(result.raw),
-          teachabilityMultiplier: result.teachabilityFactor,
-          pillarScores: Object.fromEntries(
-            result.pillars.map((p) => [String(p.index), Math.round(p.earned)]),
-          ),
-          zone: result.zone,
-          ts: Date.now(),
-        }),
-      });
-      const j = (await res.json()) as { ok?: boolean; error?: string };
-      if (res.ok && j.ok) {
-        setCloudMsg({ ok: true, text: "Snapshot logged and persisted to cloud." });
-      } else {
-        setCloudMsg({ ok: false, text: j.error ?? `Cloud save failed (${res.status})` });
-      }
-    } catch (e) {
-      setCloudMsg({ ok: false, text: (e as Error).message });
-    } finally {
-      setCloudBusy(false);
-    }
+    setCloudMsg({ ok: true, text: "Snapshot logged on this device. Use Save progress to account on Overview to include it in your cloud copy." });
   }
 
   const peak = snaps.reduce((m, s) => Math.max(m, s.final), 0);

@@ -1,3 +1,4 @@
+import { accountStorage } from "@/lib/diagnostic/local-storage";
 // Cross-diagnostic friction extraction.
 //
 // Reads every portfolio assessment's persisted scores from localStorage,
@@ -37,7 +38,7 @@ export function loadAssessmentFriction(threshold = 0.66): AssessmentFrictionPoin
   for (const def of ASSESSMENTS) {
     let scores: GenericScores = {};
     try {
-      const raw = window.localStorage.getItem(LS_PREFIX + def.key);
+      const raw = accountStorage.getItem(LS_PREFIX + def.key);
       if (raw) scores = JSON.parse(raw) as GenericScores;
     } catch {
       /* ignore corrupt entry */

@@ -1,3 +1,4 @@
+import { accountStorage } from "@/lib/diagnostic/local-storage";
 import { createFileRoute, Link, useParams } from "@tanstack/react-router";
 import { useMemo, useState, useEffect } from "react";
 import type { GPillarResult } from "@/lib/assessment/engine";
@@ -39,7 +40,7 @@ function AssessmentRunner() {
   useEffect(() => {
     if (!def) return;
     try {
-      const raw = window.localStorage.getItem(LS_PREFIX + def.key);
+      const raw = accountStorage.getItem(LS_PREFIX + def.key);
       if (raw) setScores(JSON.parse(raw));
     } catch {
       /* ignore */
@@ -50,7 +51,7 @@ function AssessmentRunner() {
   useEffect(() => {
     if (!hydrated || !def) return;
     try {
-      window.localStorage.setItem(LS_PREFIX + def.key, JSON.stringify(scores));
+      accountStorage.setItem(LS_PREFIX + def.key, JSON.stringify(scores));
     } catch {
       /* ignore */
     }

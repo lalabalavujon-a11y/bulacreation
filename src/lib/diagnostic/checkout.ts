@@ -18,48 +18,27 @@ export const PLAN_TAGS: Record<Exclude<PlanKey, "free">, string> = {
   coach_pro: "bula-coach-pro",
 };
 
-/** Super-admin / owner tags → full coach-pro entitlement (all features, no
- *  checkout, no trial). Applied manually to the owner's CRM contact. */
-export const SUPER_ADMIN_TAGS = new Set(["bula-super-admin", "bula-owner", "super-admin", "owner"]);
-
-/** Known Super Admin / Owner emails that always receive automatic full Coach Pro
- *  entitlement regardless of CRM connectivity or offline status. */
-export const SUPER_ADMIN_EMAILS = new Set(["lalabalavu.jon@gmail.com"]);
-
-export function isSuperAdminEmail(email?: string | null): boolean {
-  if (!email) return false;
-  return SUPER_ADMIN_EMAILS.has(email.trim().toLowerCase());
-}
-
-export function isSuperAdminTag(tag: string): boolean {
-  return SUPER_ADMIN_TAGS.has(tag);
-}
-
-/** Reverse lookup: tag → plan. Super-admin / owner tags resolve to coach_pro
- *  (the top of the plan ladder), granting full access without a checkout. */
+/** Plan tags describe billing tiers only; they never confer an admin role. */
 export function planFromTag(tag: string): PlanKey | null {
-  if (isSuperAdminTag(tag)) return "coach_pro";
-  for (const [key, t] of Object.entries(PLAN_TAGS)) {
-    if (t === tag) return key as PlanKey;
-  }
+  for (const [key, value] of Object.entries(PLAN_TAGS)) if (value === tag) return key as PlanKey;
   return null;
 }
 
 const env = import.meta.env as Record<string, string | undefined>;
 
 export const CHECKOUT_URLS: Record<Exclude<PlanKey, "free">, string> = {
-  pro: env.VITE_CHECKOUT_PRO_URL ?? "",
-  performance: env.VITE_CHECKOUT_PERFORMANCE_URL ?? "",
-  coach: env.VITE_CHECKOUT_COACH_URL ?? "",
-  coach_pro: env.VITE_CHECKOUT_COACH_PRO_URL ?? "",
+  pro: env['VITE_CHECKOUT_PRO_URL'] ?? "",
+  performance: env['VITE_CHECKOUT_PERFORMANCE_URL'] ?? "",
+  coach: env['VITE_CHECKOUT_COACH_URL'] ?? "",
+  coach_pro: env['VITE_CHECKOUT_COACH_PRO_URL'] ?? "",
 };
 
-/** Annual variant URLs (optional — reuses monthly form if absent). */
+/** Annual variant URLs. Missing annual forms must not charge monthly instead. */
 export const CHECKOUT_URLS_ANNUAL: Record<Exclude<PlanKey, "free">, string> = {
-  pro: env.VITE_CHECKOUT_PRO_ANNUAL_URL ?? "",
-  performance: env.VITE_CHECKOUT_PERFORMANCE_ANNUAL_URL ?? "",
-  coach: env.VITE_CHECKOUT_COACH_ANNUAL_URL ?? "",
-  coach_pro: env.VITE_CHECKOUT_COACH_PRO_ANNUAL_URL ?? "",
+  pro: env['VITE_CHECKOUT_PRO_ANNUAL_URL'] ?? "",
+  performance: env['VITE_CHECKOUT_PERFORMANCE_ANNUAL_URL'] ?? "",
+  coach: env['VITE_CHECKOUT_COACH_ANNUAL_URL'] ?? "",
+  coach_pro: env['VITE_CHECKOUT_COACH_PRO_ANNUAL_URL'] ?? "",
 };
 
 export interface CheckoutTarget {
@@ -75,7 +54,7 @@ export function resolveCheckout(
   billing: "monthly" | "yearly" = "monthly",
 ): CheckoutTarget {
   const monthly = CHECKOUT_URLS[plan];
-  const url = billing === "yearly" ? CHECKOUT_URLS_ANNUAL[plan] || monthly : monthly;
+  const url = billing === "yearly" ? CHECKOUT_URLS_ANNUAL[plan] : monthly;
   return { url: url || null, live: Boolean(url), plan, billing };
 }
 
@@ -108,7 +87,7 @@ export const ONE_TIME_PRODUCTS: Record<string, OneTimeProduct> = {
       "60 days of Coach-tier access included",
       "No calendar booking — starts the moment you enter",
     ],
-    url: env.VITE_CHECKOUT_CALIBRATION_URL ?? "",
+    url: env['VITE_CHECKOUT_CALIBRATION_URL'] ?? "",
   },
 };
 

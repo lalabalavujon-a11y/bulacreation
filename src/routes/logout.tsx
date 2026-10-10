@@ -1,5 +1,5 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { useAuth } from "@/lib/diagnostic/auth-context";
 
 export const Route = createFileRoute("/logout")({
@@ -12,15 +12,17 @@ export const Route = createFileRoute("/logout")({
 function LogoutComponent() {
   const { logout } = useAuth();
   const navigate = useNavigate();
+  const [error, setError] = useState("");
 
   useEffect(() => {
-    logout();
-    navigate({ to: "/login" });
+    void logout()
+      .then(() => navigate({ to: "/login" }))
+      .catch(() => setError("Could not sign out. Please refresh and try again."));
   }, [logout, navigate]);
 
   return (
     <div className="flex min-h-screen items-center justify-center bg-background text-sm text-muted-foreground">
-      Signing out…
+      {error || "Signing out…"}
     </div>
   );
 }

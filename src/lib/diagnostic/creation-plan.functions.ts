@@ -1,3 +1,4 @@
+import { consumeAi, requireFeature } from "../security/session.server";
 // Creation Plan™ generator — the flagship V1 feature.
 // Converts an audit result into a structured execution plan:
 // Chief Aim → Voltage → Primary Constraint → Why → 72h Intervention →
@@ -44,6 +45,8 @@ export interface CreationPlan {
 export const generateCreationPlan = createServerFn({ method: "POST" })
   .validator((data) => InputSchema.parse(data))
   .handler(async ({ data }) => {
+    if (data.persona === "calibration") await requireFeature("coachOs");
+    await consumeAi();
     const apiKey = process.env.OPENAI_API_KEY;
     const methodology = getMethodology(data.constraintId);
 

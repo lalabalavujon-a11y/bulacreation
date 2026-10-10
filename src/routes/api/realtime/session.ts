@@ -1,3 +1,4 @@
+import { requireFeature, assertSameOrigin, consumeAi } from "@/lib/security/session.server";
 import { createFileRoute } from "@tanstack/react-router";
 import { z } from "zod";
 import { getLatestAudit, buildServerContext } from "@/lib/diagnostic/store.server";
@@ -13,6 +14,9 @@ export const Route = createFileRoute("/api/realtime/session")({
   server: {
     handlers: {
       POST: async ({ request }) => {
+        assertSameOrigin();
+        await requireFeature("voiceCoach");
+        await consumeAi();
         const apiKey = process.env.OPENAI_API_KEY;
         if (!apiKey) {
           return Response.json(
@@ -38,7 +42,7 @@ export const Route = createFileRoute("/api/realtime/session")({
         // Load user context server-side from the latest persisted audit
         // (mirrors the worker's D1 context load). Client-provided context is
         // appended so live, unsaved state still reaches the model.
-        const latest = getLatestAudit();
+        const latest = await getLatestAudit();
         const serverContext = buildServerContext(latest);
         const clientContext = parsed.data.context?.trim() ?? "";
         const liveContext = clientContext

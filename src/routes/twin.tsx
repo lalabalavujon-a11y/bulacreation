@@ -74,7 +74,7 @@ function TwinComponent() {
     setAnswer(null);
     try {
       const digest = twinDigest(twin);
-      const res = await reason({ twinDigest: digest, question: question.trim() });
+      const res = await reason({ data: { twinDigest: digest, question: question.trim() } });
       if (res.ok) {
         setAnswer(res.content);
       } else {
