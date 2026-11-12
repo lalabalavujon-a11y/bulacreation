@@ -55,12 +55,10 @@ function SupportComponent() {
           <div>
             <h2 className="font-display text-sm font-semibold">Contact the Team</h2>
             <p className="mt-1 text-sm text-muted-foreground">
-              For account, billing, or data-rights requests (access, export, deletion) email{" "}
-              <a
-                href="mailto:support@bulacreation.app"
-                className="font-medium text-gold hover:underline"
-              >
-                support@bulacreation.app
+              Bula Group Ltd (company no. 17465512) is the data controller. For account, billing, or
+              data-rights requests (access, export, deletion) email{" "}
+              <a href="mailto:jon@bulagroup.ltd" className="font-medium text-gold hover:underline">
+                jon@bulagroup.ltd
               </a>
               . We aim to respond within 2 business days.
             </p>

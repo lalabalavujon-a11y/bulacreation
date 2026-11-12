@@ -28,10 +28,23 @@ function PrivacyComponent() {
           <span className="text-[11px] uppercase tracking-[0.3em] text-gold-soft">Legal</span>
         </div>
         <h1 className="font-display text-3xl font-bold tracking-tight">Privacy Policy</h1>
-        <p className="text-sm text-muted-foreground">Last updated: 27 September 2026</p>
+        <p className="text-sm text-muted-foreground">Last updated: 12 November 2026</p>
       </header>
 
       <section className="panel space-y-3 p-6">
+        <div>
+          <h2 className="font-display text-sm font-semibold text-gold-soft">Who we are</h2>
+          <p className="mt-1 text-sm text-muted-foreground">
+            Bula Creation is a trading name of Bula Group Ltd, a company registered in England and
+            Wales (company no. 17465512). Bula Group Ltd is the data controller for personal data
+            collected through this website and is registered with the Information
+            Commissioner&apos;s Office under registration number ZC299435. Contact:{" "}
+            <a href="mailto:jon@bulagroup.ltd" className="font-medium text-gold hover:underline">
+              jon@bulagroup.ltd
+            </a>
+            .
+          </p>
+        </div>
         <p className="text-sm text-muted-foreground">
           Bula Creation is built <strong>private by default</strong>. This policy explains what we
           collect, how it is used, and the controls you have.
@@ -59,7 +72,7 @@ function PrivacyComponent() {
           },
           {
             t: "6. Your Rights",
-            b: "You may access, export, or request deletion of your data at any time. Contact support to exercise these rights.",
+            b: "You may access, export, or request deletion of your data at any time. Email jon@bulagroup.ltd to exercise these rights.",
           },
           {
             t: "7. Security",

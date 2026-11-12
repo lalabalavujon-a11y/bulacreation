@@ -28,13 +28,14 @@ function TermsComponent() {
           <span className="text-[11px] uppercase tracking-[0.3em] text-gold-soft">Legal</span>
         </div>
         <h1 className="font-display text-3xl font-bold tracking-tight">Terms of Service</h1>
-        <p className="text-sm text-muted-foreground">Last updated: 27 September 2026</p>
+        <p className="text-sm text-muted-foreground">Last updated: 12 November 2026</p>
       </header>
 
       <section className="panel space-y-3 p-6">
         <p className="text-sm text-muted-foreground">
-          These Terms govern your use of Bula Creation (the &quot;Service&quot;), operated by Bula
-          Group. By creating an account or using the Service, you agree to these Terms.
+          These Terms govern your use of Bula Creation (the &quot;Service&quot;). Bula Creation is a
+          trading name of Bula Group Ltd, a company registered in England and Wales (company no.
+          17465512). By creating an account or using the Service, you agree to these Terms.
         </p>
         {[
           {
@@ -63,7 +64,7 @@ function TermsComponent() {
           },
           {
             t: "7. Limitation of Liability",
-            b: "The Service is provided &quot;as is&quot;. Bula Group is not liable for indirect or consequential damages arising from use of the Service or reliance on its outputs.",
+            b: "The Service is provided &quot;as is&quot;. Bula Group Ltd (company no. 17465512) is not liable for indirect or consequential damages arising from use of the Service or reliance on its outputs.",
           },
           {
             t: "8. Changes",

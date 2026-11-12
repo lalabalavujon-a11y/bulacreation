@@ -40,9 +40,8 @@ export function AppFooter() {
 
       <div className="mx-auto mt-5 max-w-6xl text-center text-[11px] leading-relaxed text-muted-foreground md:text-left">
         <p>
-          Copyright © 2026 Bula Creation. Powered by{" "}
-          <span className="font-medium text-gold-soft">Bula Creation</span>. Operated by{" "}
-          <span className="font-medium text-gold-soft">Bula Group</span>.
+          Copyright © 2026 Bula Creation. Bula Creation is a trading name of Bula Group Ltd (company
+          no. 17465512). ICO registration ZC299435.
         </p>
         <p className="mt-1 text-muted-foreground/70">
           AI Goal Execution System · Private by default · Not a substitute for professional medical
