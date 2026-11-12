@@ -2,6 +2,8 @@
 
 > Bula Creation is a cybernetic personal operating system that transforms abstract intentions into measurable, feedback-governed performance. It audits individuals and organizations across 40 distinct criteria organized into 6 foundational pillars, calculating an empirical Creation Voltage (0–10,000 points) governed by the Teachability Index.
 
+Bula Creation is a trading name of Bula Group Ltd, a company registered in England and Wales (company no. 17465512). Bula Group Ltd is the data controller for personal data collected through this website and is registered with the Information Commissioner's Office under registration number ZC299435. Contact: jon@bulagroup.ltd.
+
 ## Core Concepts
 - **Creation Voltage (0–10,000)**: Composite index of execution readiness and systemic alignment.
 - **Teachability Factor**: The master governor (Point #2) scaling total systemic output.

@@ -586,6 +586,10 @@ function VslComponent() {
           <p>40-Point Creation Algorithm · AI Goal Execution System</p>
           <p>Private by default.</p>
         </div>
+        <p className="mx-auto mt-4 max-w-6xl px-5 text-center text-[11px] leading-relaxed text-muted-foreground">
+          Bula Creation is a trading name of Bula Group Ltd (company no. 17465512). ICO registration
+          ZC299435.
+        </p>
       </footer>
 
       {/* Sticky mobile CTA */}

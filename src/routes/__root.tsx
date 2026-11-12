@@ -292,7 +292,7 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
         content:
           "Bula Creation: A personal operating system that converts goals, behaviour, self-assessment and AI coaching into a measurable feedback loop. The 40-Point Creation Algorithm.",
       },
-      { name: "author", content: "Bula Creation · Bula Group" },
+      { name: "author", content: "Bula Creation · Bula Group Ltd" },
       { property: "og:title", content: "Bula Creation — AI Goal Execution System" },
       {
         property: "og:description",
@@ -340,7 +340,10 @@ function RootShell({ children }: { children: ReactNode }) {
         logo: "https://bulacreation.app/logo.svg",
         parentOrganization: {
           "@type": "Organization",
-          name: "Bula Group",
+          name: "Bula Group Ltd",
+          legalName: "Bula Group Ltd",
+          identifier: "17465512",
+          email: "jon@bulagroup.ltd",
         },
       },
       {
